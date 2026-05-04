@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>TYPH FINANCE · Gestion Entreprise MGA</title>
-    <!-- PWA Manifest -->
+    <!-- PWA Manifest intégré -->
     <link rel="manifest" href="data:application/manifest+json,{
         %22name%22:%22TYPH%20FINANCE%22,
         %22short_name%22:%22TYPH%22,
@@ -218,7 +218,6 @@
         .import-btn { background: linear-gradient(95deg, #aa8844, #ccaa66); width: 100%; padding: 14px; border: none; border-radius: 40px; font-weight: bold; font-size: 15px; color: white; cursor: pointer; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .hidden-file-input { display: none; }
         
-        .icon-svg { width: 24px; height: 24px; stroke: #ff4444; stroke-width: 1.5; fill: none; vertical-align: middle; }
         .icon-small { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.7; fill: none; }
         .title-icon { width: 28px; height: 28px; stroke: #ff4444; stroke-width: 1.5; fill: none; filter: drop-shadow(0 0 3px rgba(255, 68, 68, 0.3)); }
         .flex-center { display: flex; align-items: center; gap: 8px; }
@@ -404,427 +403,508 @@
 </div>
 
 <script>
-    // ============ AUTHENTIFICATION & STOCKAGE UTILISATEUR ============
-    let currentUser = null;
-    let profits = [];
-    let expenses = [];
-    let investments = [];
-    let savings = [];
-    let initialCapital = 0;
-    let capitalGoal = 0;
-    let privacyActive = false;
-    let currentProfitMonth = new Date();
-    
-    // Clés de stockage
-    function getStorageKey(email, type) { return `typh_${email.replace(/[@.]/g, '_')}_${type}`; }
-    
-    // Sauvegarde complète des données de l'utilisateur
-    function saveUserData() {
-        if (!currentUser) return;
-        localStorage.setItem(getStorageKey(currentUser, 'profits'), JSON.stringify(profits));
-        localStorage.setItem(getStorageKey(currentUser, 'expenses'), JSON.stringify(expenses));
-        localStorage.setItem(getStorageKey(currentUser, 'investments'), JSON.stringify(investments));
-        localStorage.setItem(getStorageKey(currentUser, 'savings'), JSON.stringify(savings));
-        localStorage.setItem(getStorageKey(currentUser, 'initialCapital'), initialCapital);
-        localStorage.setItem(getStorageKey(currentUser, 'capitalGoal'), capitalGoal);
-        localStorage.setItem(getStorageKey(currentUser, 'privacy'), privacyActive);
-    }
-    
-    // Chargement des données de l'utilisateur
-    function loadUserData(email) {
-        profits = JSON.parse(localStorage.getItem(getStorageKey(email, 'profits')) || '[]');
-        expenses = JSON.parse(localStorage.getItem(getStorageKey(email, 'expenses')) || '[]');
-        investments = JSON.parse(localStorage.getItem(getStorageKey(email, 'investments')) || '[]');
-        savings = JSON.parse(localStorage.getItem(getStorageKey(email, 'savings')) || '[]');
-        initialCapital = parseFloat(localStorage.getItem(getStorageKey(email, 'initialCapital')) || '0');
-        capitalGoal = parseFloat(localStorage.getItem(getStorageKey(email, 'capitalGoal')) || '0');
-        privacyActive = localStorage.getItem(getStorageKey(email, 'privacy')) === 'true';
+    (function() {
+        // ============ AUTHENTIFICATION & STOCKAGE UTILISATEUR ============
+        let currentUser = null;
+        let profits = [];
+        let expenses = [];
+        let investments = [];
+        let savings = [];
+        let initialCapital = 0;
+        let capitalGoal = 0;
+        let privacyActive = false;
+        let currentProfitMonth = new Date();
         
-        // Données démo pour nouveau compte
-        if (profits.length === 0 && expenses.length === 0 && initialCapital === 0) {
-            const today = new Date().toISOString().split('T')[0];
-            profits.push({ id: Date.now(), source: "Bienvenue sur TYPH", amount: 1000000, date: today });
-            expenses.push({ id: Date.now()+1, category: "Démarrage", amount: 200000, date: today });
-            initialCapital = 5000000;
-            capitalGoal = 10000000;
-            saveUserData();
+        // Clés de stockage
+        function getStorageKey(email, type) { return `typh_${email.replace(/[@.]/g, '_')}_${type}`; }
+        
+        // Sauvegarde complète des données de l'utilisateur
+        function saveUserData() {
+            if (!currentUser) return;
+            localStorage.setItem(getStorageKey(currentUser, 'profits'), JSON.stringify(profits));
+            localStorage.setItem(getStorageKey(currentUser, 'expenses'), JSON.stringify(expenses));
+            localStorage.setItem(getStorageKey(currentUser, 'investments'), JSON.stringify(investments));
+            localStorage.setItem(getStorageKey(currentUser, 'savings'), JSON.stringify(savings));
+            localStorage.setItem(getStorageKey(currentUser, 'initialCapital'), initialCapital);
+            localStorage.setItem(getStorageKey(currentUser, 'capitalGoal'), capitalGoal);
+            localStorage.setItem(getStorageKey(currentUser, 'privacy'), privacyActive);
         }
         
-        document.getElementById('privacyToggle')?.classList.toggle('active', privacyActive);
-        updateAllUI();
-    }
-    
-    // Gestion des utilisateurs (stockage local des identifiants)
-    function registerUser(email, pwd) {
-        if (pwd.length < 4) return false;
-        const users = JSON.parse(localStorage.getItem('typh_users') || '{}');
-        if (users[email]) return false;
-        users[email] = btoa(pwd);
-        localStorage.setItem('typh_users', JSON.stringify(users));
-        return true;
-    }
-    
-    function loginUser(email, pwd) {
-        const users = JSON.parse(localStorage.getItem('typh_users') || '{}');
-        if (users[email] && users[email] === btoa(pwd)) {
-            currentUser = email;
-            loadUserData(email);
+        // Chargement des données de l'utilisateur
+        function loadUserData(email) {
+            profits = JSON.parse(localStorage.getItem(getStorageKey(email, 'profits')) || '[]');
+            expenses = JSON.parse(localStorage.getItem(getStorageKey(email, 'expenses')) || '[]');
+            investments = JSON.parse(localStorage.getItem(getStorageKey(email, 'investments')) || '[]');
+            savings = JSON.parse(localStorage.getItem(getStorageKey(email, 'savings')) || '[]');
+            initialCapital = parseFloat(localStorage.getItem(getStorageKey(email, 'initialCapital')) || '0');
+            capitalGoal = parseFloat(localStorage.getItem(getStorageKey(email, 'capitalGoal')) || '0');
+            privacyActive = localStorage.getItem(getStorageKey(email, 'privacy')) === 'true';
+            
+            // Données démo pour nouveau compte
+            if (profits.length === 0 && expenses.length === 0 && initialCapital === 0) {
+                const today = new Date().toISOString().split('T')[0];
+                profits.push({ id: Date.now(), source: "Bienvenue sur TYPH", amount: 1000000, date: today });
+                expenses.push({ id: Date.now()+1, category: "Démarrage", amount: 200000, date: today });
+                initialCapital = 5000000;
+                capitalGoal = 10000000;
+                saveUserData();
+            }
+            
+            const toggle = document.getElementById('privacyToggle');
+            if (toggle) {
+                if (privacyActive) toggle.classList.add('active');
+                else toggle.classList.remove('active');
+            }
+            updateAllUI();
+        }
+        
+        // Gestion des utilisateurs
+        function registerUser(email, pwd) {
+            if (pwd.length < 4) return false;
+            const users = JSON.parse(localStorage.getItem('typh_users') || '{}');
+            if (users[email]) return false;
+            users[email] = btoa(pwd);
+            localStorage.setItem('typh_users', JSON.stringify(users));
             return true;
         }
-        return false;
-    }
-    
-    function logout() {
-        currentUser = null;
-        document.getElementById('appContainer').style.display = 'none';
-        document.getElementById('authContainer').style.display = 'flex';
-        // Réinitialiser les formulaires
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('regEmail').value = '';
-        document.getElementById('regPassword').value = '';
-    }
-    
-    // ============ FONCTIONS MÉTIER ============
-    function getTotalProfit() { return profits.reduce((s,p)=>s+p.amount,0); }
-    function getTotalExpense() { return expenses.reduce((s,e)=>s+e.amount,0); }
-    function getTotalInvest() { return investments.reduce((s,i)=>s+i.amount,0); }
-    function getTotalSaving() { return savings.reduce((s,sav)=>s+sav.amount,0); }
-    function getNetProfit() { return getTotalProfit() - getTotalExpense(); }
-    function getCurrentCapital() { return initialCapital + getTotalProfit() - (getTotalExpense() + getTotalInvest()); }
-    function getDailyProfit(dateStr) { return profits.filter(p=>p.date===dateStr).reduce((s,p)=>s+p.amount,0); }
-    function getDailyExpense(dateStr) { return expenses.filter(e=>e.date===dateStr).reduce((s,e)=>s+e.amount,0); }
-    function getDailyBalance(dateStr) { return getDailyProfit(dateStr) - getDailyExpense(dateStr); }
-    function getMonthlyProfit(year, month) { return profits.filter(p=>{ let d=p.date.split('-'); return parseInt(d[0])===year && parseInt(d[1])===month; }).reduce((s,p)=>s+p.amount,0); }
-    function getMonthlyExpense(year, month) { return expenses.filter(e=>{ let d=e.date.split('-'); return parseInt(d[0])===year && parseInt(d[1])===month; }).reduce((s,e)=>s+e.amount,0); }
-    function getMonthlyBalance(year, month) { return getMonthlyProfit(year, month) - getMonthlyExpense(year, month); }
-    
-    function formatNumberWithColor(value, unit = 'MGA') {
-        let formatted = Math.abs(value).toLocaleString('fr-FR') + ' ' + unit;
-        if (value > 0) return `<span class="positive-text">+${formatted}</span>`;
-        if (value < 0) return `<span class="negative-text">-${formatted}</span>`;
-        return `<span>0 ${unit}</span>`;
-    }
-    
-    function updateAllUI() {
-        let capital = getCurrentCapital();
-        let capitalElement = document.getElementById('totalCapital');
-        let netProfitElement = document.getElementById('netProfitDisplay');
         
-        capitalElement.innerHTML = Math.abs(capital).toLocaleString('fr-FR') + ' MGA';
-        capitalElement.classList.remove('capital-positive', 'capital-negative');
-        if (capital >= 0) capitalElement.classList.add('capital-positive');
-        else capitalElement.classList.add('capital-negative');
-        
-        let netProfit = getNetProfit();
-        netProfitElement.innerHTML = formatNumberWithColor(netProfit, 'MGA');
-        
-        document.getElementById('totalExpensesDisplay').innerHTML = getTotalExpense().toLocaleString('fr-FR') + ' MGA';
-        document.getElementById('totalInvestDisplay').innerHTML = getTotalInvest().toLocaleString('fr-FR') + ' MGA';
-        document.getElementById('totalSavingsDisplay').innerHTML = getTotalSaving().toLocaleString('fr-FR') + ' MGA';
-        
-        let roi = initialCapital === 0 ? 0 : (getNetProfit() / initialCapital) * 100;
-        document.getElementById('roiGlobal').innerHTML = roi.toFixed(1) + '%';
-        
-        let capPercent = capitalGoal > 0 ? Math.min(100, (capital / capitalGoal) * 100) : 0;
-        document.getElementById('goalProgressFill').style.width = capPercent + '%';
-        
-        document.getElementById('statsTotalProfit').innerHTML = getTotalProfit().toLocaleString('fr-FR') + ' MGA';
-        document.getElementById('statsTotalExpense').innerHTML = getTotalExpense().toLocaleString('fr-FR') + ' MGA';
-        document.getElementById('statsTotalInvest').innerHTML = getTotalInvest().toLocaleString('fr-FR') + ' MGA';
-        document.getElementById('statsTotalSaving').innerHTML = getTotalSaving().toLocaleString('fr-FR') + ' MGA';
-        
-        let netMargin = getTotalProfit() === 0 ? 0 : ((getTotalProfit() - getTotalExpense()) / getTotalProfit()) * 100;
-        document.getElementById('netMargin').innerHTML = netMargin.toFixed(1) + '%';
-        
-        document.getElementById('initialCapitalInput').value = initialCapital;
-        document.getElementById('goalCapitalInput').value = capitalGoal;
-        document.getElementById('userEmailDisplay').innerHTML = `👤 ${currentUser} · Données locales`;
-        
-        renderProfitCalendar();
-        renderLists();
-        applyPrivacy();
-        
-        let capFillPercent = capitalGoal > 0 ? (capital / capitalGoal) * 100 : 0;
-        document.getElementById('capitalFill').style.width = Math.min(100, capFillPercent) + '%';
-    }
-    
-    function renderProfitCalendar() {
-        let year = currentProfitMonth.getFullYear();
-        let month = currentProfitMonth.getMonth();
-        let firstDay = new Date(year, month, 1).getDay();
-        let daysInMonth = new Date(year, month + 1, 0).getDate();
-        let startOffset = (firstDay === 0 ? 6 : firstDay - 1);
-        document.getElementById('currentMonthProfit').innerHTML = new Date(year, month).toLocaleString('fr', { month: 'long', year: 'numeric' }).toUpperCase();
-        let html = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'].map(d => `<div class="weekday">${d}</div>`).join('');
-        for (let i = 0; i < startOffset; i++) html += `<div class="cal-day neutral-border" style="background:transparent;"></div>`;
-        for (let d = 1; d <= daysInMonth; d++) {
-            let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            let dailyBalance = getDailyBalance(dateStr);
-            let hasTransaction = getDailyProfit(dateStr) !== 0 || getDailyExpense(dateStr) !== 0;
-            let todayStr = new Date().toISOString().split('T')[0];
-            
-            let borderClass = 'neutral-border';
-            if (hasTransaction && dailyBalance > 0) borderClass = 'profit-border';
-            else if (hasTransaction && dailyBalance < 0) borderClass = 'loss-border';
-            
-            let balanceClass = dailyBalance >= 0 ? 'positive' : 'negative';
-            let balanceSign = dailyBalance >= 0 ? '+' : '-';
-            let todayClass = dateStr === todayStr ? 'today' : '';
-            
-            let displayText = '';
-            if (dailyBalance > 0) displayText = `${balanceSign}${Math.abs(dailyBalance).toLocaleString('fr-FR')} MGA`;
-            else if (dailyBalance < 0) displayText = `${balanceSign}${Math.abs(dailyBalance).toLocaleString('fr-FR')} MGA`;
-            else if (hasTransaction) displayText = `0 MGA`;
-            else displayText = '—';
-            
-            let displayClass = dailyBalance > 0 ? 'positive' : (dailyBalance < 0 ? 'negative' : '');
-            
-            html += `<div class="cal-day ${borderClass} ${todayClass}" data-date="${dateStr}">
-                        <div class="day-number">${d}</div>
-                        <div class="day-pnl ${displayClass}">${displayText}</div>
-                     </div>`;
+        function loginUser(email, pwd) {
+            const users = JSON.parse(localStorage.getItem('typh_users') || '{}');
+            if (users[email] && users[email] === btoa(pwd)) {
+                currentUser = email;
+                loadUserData(email);
+                return true;
+            }
+            return false;
         }
-        document.getElementById('profitCalendarGrid').innerHTML = html;
-        document.querySelectorAll('.cal-day[data-date]').forEach(el => el.addEventListener('click', () => { showDayDetail(el.dataset.date); }));
-        let monthBalance = getMonthlyBalance(year, month + 1);
-        let monthTotalElement = document.getElementById('monthProfitTotal');
-        if (monthBalance >= 0) monthTotalElement.innerHTML = `<span class="positive-text">+${monthBalance.toLocaleString('fr-FR')} MGA</span>`;
-        else monthTotalElement.innerHTML = `<span class="negative-text">-${Math.abs(monthBalance).toLocaleString('fr-FR')} MGA</span>`;
-    }
-    
-    function showDayDetail(date) {
-        let dayProfits = profits.filter(p => p.date === date);
-        let dayExpenses = expenses.filter(e => e.date === date);
-        let profitTotal = getDailyProfit(date);
-        let expenseTotal = getDailyExpense(date);
-        let balance = profitTotal - expenseTotal;
         
-        let msg = `📅 ${date}\n`;
-        msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-        msg += `💰 PROFITS: +${profitTotal.toLocaleString('fr-FR')} MGA\n`;
-        if (dayProfits.length > 0) {
-            msg += dayProfits.map(p => `   └ ${p.source}: ${p.amount.toLocaleString('fr-FR')} MGA`).join('\n');
-        } else {
-            msg += `   └ Aucun profit\n`;
+        function logout() {
+            currentUser = null;
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPassword').value = '';
         }
-        msg += `\n📉 DÉPENSES: -${expenseTotal.toLocaleString('fr-FR')} MGA\n`;
-        if (dayExpenses.length > 0) {
-            msg += dayExpenses.map(e => `   └ ${e.category}: ${e.amount.toLocaleString('fr-FR')} MGA`).join('\n');
-        } else {
-            msg += `   └ Aucune dépense\n`;
+        
+        // ============ FONCTIONS MÉTIER ============
+        function getTotalProfit() { return profits.reduce((s,p)=>s+p.amount,0); }
+        function getTotalExpense() { return expenses.reduce((s,e)=>s+e.amount,0); }
+        function getTotalInvest() { return investments.reduce((s,i)=>s+i.amount,0); }
+        function getTotalSaving() { return savings.reduce((s,sav)=>s+sav.amount,0); }
+        function getNetProfit() { return getTotalProfit() - getTotalExpense(); }
+        function getCurrentCapital() { return initialCapital + getTotalProfit() - (getTotalExpense() + getTotalInvest()); }
+        function getDailyProfit(dateStr) { return profits.filter(p=>p.date===dateStr).reduce((s,p)=>s+p.amount,0); }
+        function getDailyExpense(dateStr) { return expenses.filter(e=>e.date===dateStr).reduce((s,e)=>s+e.amount,0); }
+        function getDailyBalance(dateStr) { return getDailyProfit(dateStr) - getDailyExpense(dateStr); }
+        function getMonthlyProfit(year, month) { return profits.filter(p=>{ let d=p.date.split('-'); return parseInt(d[0])===year && parseInt(d[1])===month; }).reduce((s,p)=>s+p.amount,0); }
+        function getMonthlyExpense(year, month) { return expenses.filter(e=>{ let d=e.date.split('-'); return parseInt(d[0])===year && parseInt(d[1])===month; }).reduce((s,e)=>s+e.amount,0); }
+        function getMonthlyBalance(year, month) { return getMonthlyProfit(year, month) - getMonthlyExpense(year, month); }
+        
+        function formatNumberWithColor(value, unit = 'MGA') {
+            let formatted = Math.abs(value).toLocaleString('fr-FR') + ' ' + unit;
+            if (value > 0) return `<span class="positive-text">+${formatted}</span>`;
+            if (value < 0) return `<span class="negative-text">-${formatted}</span>`;
+            return `<span>0 ${unit}</span>`;
         }
-        msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-        if (balance > 0) msg += `✅ SOLDE JOURNALIER: +${balance.toLocaleString('fr-FR')} MGA (BÉNÉFICE)`;
-        else if (balance < 0) msg += `❌ SOLDE JOURNALIER: -${Math.abs(balance).toLocaleString('fr-FR')} MGA (PERTE)`;
-        else msg += `⚖️ SOLDE JOURNALIER: 0 MGA (ÉQUILIBRE)`;
-        alert(msg);
-    }
-    
-    function renderLists() {
-        document.getElementById('profitsList').innerHTML = profits.slice().reverse().map(p => `<div class="list-item"><div><strong>${p.source}</strong> - <span class="positive-text">+${p.amount.toLocaleString('fr-FR')} MGA</span><br><span style="font-size:10px;">${p.date}</span></div><button class="delete-btn" data-id="${p.id}" data-type="profit">supprimer</button></div>`).join('');
-        document.getElementById('expensesList').innerHTML = expenses.slice().reverse().map(e => `<div class="list-item"><div><strong>${e.category}</strong> - <span class="negative-text">-${e.amount.toLocaleString('fr-FR')} MGA</span><br><span style="font-size:10px;">${e.date}</span></div><button class="delete-btn" data-id="${e.id}" data-type="expense">supprimer</button></div>`).join('');
-        document.getElementById('investmentsList').innerHTML = investments.slice().reverse().map(i => `<div class="list-item"><div><strong>${i.name}</strong> (${i.type}) - ${i.amount.toLocaleString('fr-FR')} MGA<br><span style="font-size:10px;">${i.date}</span></div><button class="delete-btn" data-id="${i.id}" data-type="invest">supprimer</button></div>`).join('');
-        document.getElementById('savingsList').innerHTML = savings.slice().reverse().map(s => `<div class="list-item"><div><strong>${s.name}</strong> - ${s.amount.toLocaleString('fr-FR')} MGA<br><span style="font-size:10px;">${s.date}</span></div><button class="delete-btn" data-id="${s.id}" data-type="saving">supprimer</button></div>`).join('');
         
-        document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => {
-            let id = parseInt(btn.dataset.id);
-            let type = btn.dataset.type;
-            if (type === 'profit') profits = profits.filter(p => p.id !== id);
-            if (type === 'expense') expenses = expenses.filter(e => e.id !== id);
-            if (type === 'invest') investments = investments.filter(i => i.id !== id);
-            if (type === 'saving') savings = savings.filter(s => s.id !== id);
-            saveUserData();
-            updateAllUI();
-        }));
-    }
-    
-    function exportToJSON() {
-        let data = {
-            exportDate: new Date().toISOString(),
-            user: currentUser,
-            initialCapital: initialCapital,
-            capitalGoal: capitalGoal,
-            currentCapital: getCurrentCapital(),
-            totalProfit: getTotalProfit(),
-            totalExpense: getTotalExpense(),
-            totalInvest: getTotalInvest(),
-            totalSaving: getTotalSaving(),
-            netProfit: getNetProfit(),
-            profits: profits,
-            expenses: expenses,
-            investments: investments,
-            savings: savings,
-            privacyActive: privacyActive
-        };
+        function updateAllUI() {
+            let capital = getCurrentCapital();
+            let capitalElement = document.getElementById('totalCapital');
+            let netProfitElement = document.getElementById('netProfitDisplay');
+            
+            if (capitalElement) {
+                capitalElement.innerHTML = Math.abs(capital).toLocaleString('fr-FR') + ' MGA';
+                capitalElement.classList.remove('capital-positive', 'capital-negative');
+                if (capital >= 0) capitalElement.classList.add('capital-positive');
+                else capitalElement.classList.add('capital-negative');
+            }
+            
+            if (netProfitElement) netProfitElement.innerHTML = formatNumberWithColor(getNetProfit(), 'MGA');
+            
+            const totalExpensesDisplay = document.getElementById('totalExpensesDisplay');
+            const totalInvestDisplay = document.getElementById('totalInvestDisplay');
+            const totalSavingsDisplay = document.getElementById('totalSavingsDisplay');
+            const roiGlobal = document.getElementById('roiGlobal');
+            const goalProgressFill = document.getElementById('goalProgressFill');
+            const statsTotalProfit = document.getElementById('statsTotalProfit');
+            const statsTotalExpense = document.getElementById('statsTotalExpense');
+            const statsTotalInvest = document.getElementById('statsTotalInvest');
+            const statsTotalSaving = document.getElementById('statsTotalSaving');
+            const netMargin = document.getElementById('netMargin');
+            const initialCapitalInput = document.getElementById('initialCapitalInput');
+            const goalCapitalInput = document.getElementById('goalCapitalInput');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const capitalFill = document.getElementById('capitalFill');
+            
+            if (totalExpensesDisplay) totalExpensesDisplay.innerHTML = getTotalExpense().toLocaleString('fr-FR') + ' MGA';
+            if (totalInvestDisplay) totalInvestDisplay.innerHTML = getTotalInvest().toLocaleString('fr-FR') + ' MGA';
+            if (totalSavingsDisplay) totalSavingsDisplay.innerHTML = getTotalSaving().toLocaleString('fr-FR') + ' MGA';
+            
+            let roi = initialCapital === 0 ? 0 : (getNetProfit() / initialCapital) * 100;
+            if (roiGlobal) roiGlobal.innerHTML = roi.toFixed(1) + '%';
+            
+            let capPercent = capitalGoal > 0 ? Math.min(100, (capital / capitalGoal) * 100) : 0;
+            if (goalProgressFill) goalProgressFill.style.width = capPercent + '%';
+            
+            if (statsTotalProfit) statsTotalProfit.innerHTML = getTotalProfit().toLocaleString('fr-FR') + ' MGA';
+            if (statsTotalExpense) statsTotalExpense.innerHTML = getTotalExpense().toLocaleString('fr-FR') + ' MGA';
+            if (statsTotalInvest) statsTotalInvest.innerHTML = getTotalInvest().toLocaleString('fr-FR') + ' MGA';
+            if (statsTotalSaving) statsTotalSaving.innerHTML = getTotalSaving().toLocaleString('fr-FR') + ' MGA';
+            
+            let netMarginVal = getTotalProfit() === 0 ? 0 : ((getTotalProfit() - getTotalExpense()) / getTotalProfit()) * 100;
+            if (netMargin) netMargin.innerHTML = netMarginVal.toFixed(1) + '%';
+            
+            if (initialCapitalInput) initialCapitalInput.value = initialCapital;
+            if (goalCapitalInput) goalCapitalInput.value = capitalGoal;
+            if (userEmailDisplay && currentUser) userEmailDisplay.innerHTML = `👤 ${currentUser} · Données locales`;
+            
+            renderProfitCalendar();
+            renderLists();
+            applyPrivacy();
+            
+            let capFillPercent = capitalGoal > 0 ? (capital / capitalGoal) * 100 : 0;
+            if (capitalFill) capitalFill.style.width = Math.min(100, capFillPercent) + '%';
+        }
         
-        const jsonStr = JSON.stringify(data, null, 2);
-        const blob = new Blob(["\uFEFF" + jsonStr], { type: 'application/json' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute('download', `typh_${currentUser.replace(/[@.]/g, '_')}_backup_${new Date().toISOString().slice(0,19)}.json`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        alert("Export JSON sauvegardé !");
-    }
-    
-    function importFromJSON(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                profits = data.profits || [];
-                expenses = data.expenses || [];
-                investments = data.investments || [];
-                savings = data.savings || [];
-                initialCapital = data.initialCapital || 0;
-                capitalGoal = data.capitalGoal || 0;
-                privacyActive = data.privacyActive || false;
-                document.getElementById('privacyToggle')?.classList.toggle('active', privacyActive);
+        function renderProfitCalendar() {
+            const calendarGrid = document.getElementById('profitCalendarGrid');
+            const currentMonthProfit = document.getElementById('currentMonthProfit');
+            const monthProfitTotal = document.getElementById('monthProfitTotal');
+            if (!calendarGrid) return;
+            
+            let year = currentProfitMonth.getFullYear();
+            let month = currentProfitMonth.getMonth();
+            let firstDay = new Date(year, month, 1).getDay();
+            let daysInMonth = new Date(year, month + 1, 0).getDate();
+            let startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+            if (currentMonthProfit) currentMonthProfit.innerHTML = new Date(year, month).toLocaleString('fr', { month: 'long', year: 'numeric' }).toUpperCase();
+            let html = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'].map(d => `<div class="weekday">${d}</div>`).join('');
+            for (let i = 0; i < startOffset; i++) html += `<div class="cal-day neutral-border" style="background:transparent;"></div>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let dailyBalance = getDailyBalance(dateStr);
+                let hasTransaction = getDailyProfit(dateStr) !== 0 || getDailyExpense(dateStr) !== 0;
+                let todayStr = new Date().toISOString().split('T')[0];
+                
+                let borderClass = 'neutral-border';
+                if (hasTransaction && dailyBalance > 0) borderClass = 'profit-border';
+                else if (hasTransaction && dailyBalance < 0) borderClass = 'loss-border';
+                
+                let todayClass = dateStr === todayStr ? 'today' : '';
+                
+                let displayText = '';
+                let displayClass = '';
+                if (dailyBalance > 0) {
+                    displayText = `+${Math.abs(dailyBalance).toLocaleString('fr-FR')} MGA`;
+                    displayClass = 'positive';
+                } else if (dailyBalance < 0) {
+                    displayText = `-${Math.abs(dailyBalance).toLocaleString('fr-FR')} MGA`;
+                    displayClass = 'negative';
+                } else if (hasTransaction) {
+                    displayText = `0 MGA`;
+                    displayClass = '';
+                } else {
+                    displayText = '—';
+                    displayClass = '';
+                }
+                
+                html += `<div class="cal-day ${borderClass} ${todayClass}" data-date="${dateStr}">
+                            <div class="day-number">${d}</div>
+                            <div class="day-pnl ${displayClass}">${displayText}</div>
+                         </div>`;
+            }
+            calendarGrid.innerHTML = html;
+            document.querySelectorAll('.cal-day[data-date]').forEach(el => el.addEventListener('click', () => { showDayDetail(el.dataset.date); }));
+            let monthBalance = getMonthlyBalance(year, month + 1);
+            if (monthProfitTotal) {
+                if (monthBalance >= 0) monthProfitTotal.innerHTML = `<span class="positive-text">+${monthBalance.toLocaleString('fr-FR')} MGA</span>`;
+                else monthProfitTotal.innerHTML = `<span class="negative-text">-${Math.abs(monthBalance).toLocaleString('fr-FR')} MGA</span>`;
+            }
+        }
+        
+        function showDayDetail(date) {
+            let dayProfits = profits.filter(p => p.date === date);
+            let dayExpenses = expenses.filter(e => e.date === date);
+            let profitTotal = getDailyProfit(date);
+            let expenseTotal = getDailyExpense(date);
+            let balance = profitTotal - expenseTotal;
+            
+            let msg = `📅 ${date}\n`;
+            msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+            msg += `💰 PROFITS: +${profitTotal.toLocaleString('fr-FR')} MGA\n`;
+            if (dayProfits.length > 0) {
+                msg += dayProfits.map(p => `   └ ${p.source}: ${p.amount.toLocaleString('fr-FR')} MGA`).join('\n');
+            } else {
+                msg += `   └ Aucun profit\n`;
+            }
+            msg += `\n📉 DÉPENSES: -${expenseTotal.toLocaleString('fr-FR')} MGA\n`;
+            if (dayExpenses.length > 0) {
+                msg += dayExpenses.map(e => `   └ ${e.category}: ${e.amount.toLocaleString('fr-FR')} MGA`).join('\n');
+            } else {
+                msg += `   └ Aucune dépense\n`;
+            }
+            msg += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+            if (balance > 0) msg += `✅ SOLDE JOURNALIER: +${balance.toLocaleString('fr-FR')} MGA (BÉNÉFICE)`;
+            else if (balance < 0) msg += `❌ SOLDE JOURNALIER: -${Math.abs(balance).toLocaleString('fr-FR')} MGA (PERTE)`;
+            else msg += `⚖️ SOLDE JOURNALIER: 0 MGA (ÉQUILIBRE)`;
+            alert(msg);
+        }
+        
+        function renderLists() {
+            const profitsList = document.getElementById('profitsList');
+            const expensesList = document.getElementById('expensesList');
+            const investmentsList = document.getElementById('investmentsList');
+            const savingsList = document.getElementById('savingsList');
+            
+            if (profitsList) profitsList.innerHTML = profits.slice().reverse().map(p => `<div class="list-item"><div><strong>${escapeHtml(p.source)}</strong> - <span class="positive-text">+${p.amount.toLocaleString('fr-FR')} MGA</span><br><span style="font-size:10px;">${p.date}</span></div><button class="delete-btn" data-id="${p.id}" data-type="profit">supprimer</button></div>`).join('');
+            if (expensesList) expensesList.innerHTML = expenses.slice().reverse().map(e => `<div class="list-item"><div><strong>${escapeHtml(e.category)}</strong> - <span class="negative-text">-${e.amount.toLocaleString('fr-FR')} MGA</span><br><span style="font-size:10px;">${e.date}</span></div><button class="delete-btn" data-id="${e.id}" data-type="expense">supprimer</button></div>`).join('');
+            if (investmentsList) investmentsList.innerHTML = investments.slice().reverse().map(i => `<div class="list-item"><div><strong>${escapeHtml(i.name)}</strong> (${escapeHtml(i.type)}) - ${i.amount.toLocaleString('fr-FR')} MGA<br><span style="font-size:10px;">${i.date}</span></div><button class="delete-btn" data-id="${i.id}" data-type="invest">supprimer</button></div>`).join('');
+            if (savingsList) savingsList.innerHTML = savings.slice().reverse().map(s => `<div class="list-item"><div><strong>${escapeHtml(s.name)}</strong> - ${s.amount.toLocaleString('fr-FR')} MGA<br><span style="font-size:10px;">${s.date}</span></div><button class="delete-btn" data-id="${s.id}" data-type="saving">supprimer</button></div>`).join('');
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => {
+                let id = parseInt(btn.dataset.id);
+                let type = btn.dataset.type;
+                if (type === 'profit') profits = profits.filter(p => p.id !== id);
+                if (type === 'expense') expenses = expenses.filter(e => e.id !== id);
+                if (type === 'invest') investments = investments.filter(i => i.id !== id);
+                if (type === 'saving') savings = savings.filter(s => s.id !== id);
                 saveUserData();
                 updateAllUI();
-                alert("Restauration réussie !");
-            } catch(err) {
-                alert("Fichier invalide : " + err.message);
+            }));
+        }
+        
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+        
+        function exportToJSON() {
+            let data = {
+                exportDate: new Date().toISOString(),
+                user: currentUser,
+                initialCapital: initialCapital,
+                capitalGoal: capitalGoal,
+                currentCapital: getCurrentCapital(),
+                totalProfit: getTotalProfit(),
+                totalExpense: getTotalExpense(),
+                totalInvest: getTotalInvest(),
+                totalSaving: getTotalSaving(),
+                netProfit: getNetProfit(),
+                profits: profits,
+                expenses: expenses,
+                investments: investments,
+                savings: savings,
+                privacyActive: privacyActive
+            };
+            
+            const jsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob(["\uFEFF" + jsonStr], { type: 'application/json' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.setAttribute('download', `typh_${currentUser.replace(/[@.]/g, '_')}_backup_${new Date().toISOString().slice(0,19)}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert("Export JSON sauvegardé !");
+        }
+        
+        function importFromJSON(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    profits = data.profits || [];
+                    expenses = data.expenses || [];
+                    investments = data.investments || [];
+                    savings = data.savings || [];
+                    initialCapital = data.initialCapital || 0;
+                    capitalGoal = data.capitalGoal || 0;
+                    privacyActive = data.privacyActive || false;
+                    const toggle = document.getElementById('privacyToggle');
+                    if (toggle) {
+                        if (privacyActive) toggle.classList.add('active');
+                        else toggle.classList.remove('active');
+                    }
+                    saveUserData();
+                    updateAllUI();
+                    alert("Restauration réussie !");
+                } catch(err) {
+                    alert("Fichier invalide : " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function applyPrivacy() {
+            let filter = privacyActive ? 'blur(5px)' : 'none';
+            document.querySelectorAll('.stat-value, .day-pnl, .list-item, #totalCapital, #netProfitDisplay, .positive-text, .negative-text').forEach(el => { if (el) el.style.filter = filter; });
+        }
+        
+        function resetUserData() {
+            if (confirm("⚠️ Supprimer TOUTES vos données financières pour ce compte ? Action irréversible.")) {
+                profits = [];
+                expenses = [];
+                investments = [];
+                savings = [];
+                initialCapital = 0;
+                capitalGoal = 0;
+                saveUserData();
+                updateAllUI();
+                alert("Toutes vos données ont été réinitialisées.");
             }
-        };
-        reader.readAsText(file);
-    }
-    
-    function applyPrivacy() {
-        let filter = privacyActive ? 'blur(5px)' : 'none';
-        document.querySelectorAll('.stat-value, .day-pnl, .list-item, #totalCapital, #netProfitDisplay, .positive-text, .negative-text').forEach(el => el.style.filter = filter);
-    }
-    
-    function resetUserData() {
-        if (confirm("⚠️ Supprimer TOUTES vos données financières pour ce compte ? Action irréversible.")) {
-            profits = [];
-            expenses = [];
-            investments = [];
-            savings = [];
-            initialCapital = 0;
-            capitalGoal = 0;
-            saveUserData();
-            updateAllUI();
-            alert("Toutes vos données ont été réinitialisées.");
         }
-    }
-    
-    // ============ ÉVÉNEMENTS UI ============
-    document.getElementById('addProfitBtn').onclick = () => { let src = document.getElementById('profitSource').value; let amt = parseFloat(document.getElementById('profitAmount').value); let date = document.getElementById('profitDate').value; if (!src || isNaN(amt) || amt <= 0 || !date) return alert("Remplissez tous les champs"); profits.push({ id: Date.now(), source: src, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('profitSource').value = ''; document.getElementById('profitAmount').value = ''; };
-    document.getElementById('addExpenseBtn').onclick = () => { let cat = document.getElementById('expenseCat').value; let amt = parseFloat(document.getElementById('expenseAmount').value); let date = document.getElementById('expenseDate').value; if (isNaN(amt) || amt <= 0 || !date) return; expenses.push({ id: Date.now(), category: cat, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('expenseAmount').value = ''; };
-    document.getElementById('addInvestBtn').onclick = () => { let name = document.getElementById('investName').value; let type = document.getElementById('investType').value; let amt = parseFloat(document.getElementById('investAmount').value); let date = document.getElementById('investDate').value; if (!name || isNaN(amt) || amt <= 0 || !date) return; investments.push({ id: Date.now(), name, type, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('investName').value = ''; document.getElementById('investAmount').value = ''; };
-    document.getElementById('addSavingBtn').onclick = () => { let name = document.getElementById('savingName').value; let amt = parseFloat(document.getElementById('savingAmount').value); let date = document.getElementById('savingDate').value; if (!name || isNaN(amt) || amt <= 0 || !date) return; savings.push({ id: Date.now(), name, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('savingName').value = ''; document.getElementById('savingAmount').value = ''; };
-    document.getElementById('setCapitalBtn').onclick = () => { let val = parseFloat(document.getElementById('initialCapitalInput').value); if (!isNaN(val)) initialCapital = val; saveUserData(); updateAllUI(); };
-    document.getElementById('setGoalBtn').onclick = () => { let val = parseFloat(document.getElementById('goalCapitalInput').value); if (!isNaN(val)) capitalGoal = val; saveUserData(); updateAllUI(); };
-    document.getElementById('prevMonthProfit').onclick = () => { currentProfitMonth.setMonth(currentProfitMonth.getMonth() - 1); renderProfitCalendar(); };
-    document.getElementById('nextMonthProfit').onclick = () => { currentProfitMonth.setMonth(currentProfitMonth.getMonth() + 1); renderProfitCalendar(); };
-    document.getElementById('privacyToggle').onclick = () => { privacyActive = !privacyActive; document.getElementById('privacyToggle').classList.toggle('active'); saveUserData(); applyPrivacy(); };
-    document.getElementById('exportDownloadBtn').onclick = () => exportToJSON();
-    document.getElementById('importBtn').onclick = () => { document.getElementById('importFileInput').click(); };
-    document.getElementById('importFileInput').onchange = (e) => { if (e.target.files && e.target.files[0]) { importFromJSON(e.target.files[0]); } e.target.value = ''; };
-    document.getElementById('resetAllData').onclick = () => resetUserData();
-    document.getElementById('logoutButton').onclick = () => { logout(); };
-    document.getElementById('floatingAddBtn').onclick = () => alert("Utilisez les onglets pour ajouter profits, dépenses, investissements ou épargne.");
-    
-    // Navigation
-    function buildBottomNav() {
-        const nav = document.getElementById('bottomNav');
-        nav.innerHTML = `<button class="nav-item active" data-page="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-5v-7H9v7H5a2 2 0 0 1-2-2z"/></svg><span>Dashboard</span></button><button class="nav-item" data-page="profits"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Profits</span></button><button class="nav-item" data-page="expenses"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 12h-4l-3 9-4-18-3 9H2"/></svg><span>Dépenses</span></button><button class="nav-item" data-page="investments"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><polyline points="18 8 22 12 18 16"/><polyline points="6 8 2 12 6 16"/><line x1="12" y1="2" x2="12" y2="22"/></svg><span>Invest</span></button><button class="nav-item" data-page="savings"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/></svg><span>Épargne</span></button><button class="nav-item" data-page="settings"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Stats</span></button>`;
-        document.querySelectorAll('#bottomNav .nav-item').forEach(btn => btn.addEventListener('click', () => {
-            let page = btn.dataset.page;
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-            document.getElementById(`${page}Page`).classList.add('active-page');
-            document.querySelectorAll('#bottomNav .nav-item').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if (page === 'dashboard' || page === 'profits') updateAllUI();
-            if (page === 'profits') renderProfitCalendar();
-        }));
-    }
-    buildBottomNav();
-    
-    // ============ PWA & SERVICE WORKER ============
-    let deferredPrompt = null;
-    let installBanner = document.getElementById('installBanner');
-    
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        if (installBanner && !localStorage.getItem('installBannerClosed')) {
-            installBanner.style.display = 'flex';
+        
+        // ============ INITIALISATION DES ÉVÉNEMENTS ============
+        function initEventListeners() {
+            const addProfitBtn = document.getElementById('addProfitBtn');
+            const addExpenseBtn = document.getElementById('addExpenseBtn');
+            const addInvestBtn = document.getElementById('addInvestBtn');
+            const addSavingBtn = document.getElementById('addSavingBtn');
+            const setCapitalBtn = document.getElementById('setCapitalBtn');
+            const setGoalBtn = document.getElementById('setGoalBtn');
+            const prevMonthProfit = document.getElementById('prevMonthProfit');
+            const nextMonthProfit = document.getElementById('nextMonthProfit');
+            const privacyToggle = document.getElementById('privacyToggle');
+            const exportBtn = document.getElementById('exportDownloadBtn');
+            const importBtn = document.getElementById('importBtn');
+            const importFileInput = document.getElementById('importFileInput');
+            const resetBtn = document.getElementById('resetAllData');
+            const logoutBtn = document.getElementById('logoutButton');
+            const floatingAddBtn = document.getElementById('floatingAddBtn');
+            const installPwaBtn = document.getElementById('installPwaBtn');
+            const installAppBtn = document.getElementById('installAppBtn');
+            const closeInstallBanner = document.getElementById('closeInstallBanner');
+            
+            if (addProfitBtn) addProfitBtn.onclick = () => { let src = document.getElementById('profitSource').value; let amt = parseFloat(document.getElementById('profitAmount').value); let date = document.getElementById('profitDate').value; if (!src || isNaN(amt) || amt <= 0 || !date) return alert("Remplissez tous les champs"); profits.push({ id: Date.now(), source: src, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('profitSource').value = ''; document.getElementById('profitAmount').value = ''; };
+            if (addExpenseBtn) addExpenseBtn.onclick = () => { let cat = document.getElementById('expenseCat').value; let amt = parseFloat(document.getElementById('expenseAmount').value); let date = document.getElementById('expenseDate').value; if (isNaN(amt) || amt <= 0 || !date) return; expenses.push({ id: Date.now(), category: cat, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('expenseAmount').value = ''; };
+            if (addInvestBtn) addInvestBtn.onclick = () => { let name = document.getElementById('investName').value; let type = document.getElementById('investType').value; let amt = parseFloat(document.getElementById('investAmount').value); let date = document.getElementById('investDate').value; if (!name || isNaN(amt) || amt <= 0 || !date) return; investments.push({ id: Date.now(), name, type, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('investName').value = ''; document.getElementById('investAmount').value = ''; };
+            if (addSavingBtn) addSavingBtn.onclick = () => { let name = document.getElementById('savingName').value; let amt = parseFloat(document.getElementById('savingAmount').value); let date = document.getElementById('savingDate').value; if (!name || isNaN(amt) || amt <= 0 || !date) return; savings.push({ id: Date.now(), name, amount: amt, date }); saveUserData(); updateAllUI(); document.getElementById('savingName').value = ''; document.getElementById('savingAmount').value = ''; };
+            if (setCapitalBtn) setCapitalBtn.onclick = () => { let val = parseFloat(document.getElementById('initialCapitalInput').value); if (!isNaN(val)) initialCapital = val; saveUserData(); updateAllUI(); };
+            if (setGoalBtn) setGoalBtn.onclick = () => { let val = parseFloat(document.getElementById('goalCapitalInput').value); if (!isNaN(val)) capitalGoal = val; saveUserData(); updateAllUI(); };
+            if (prevMonthProfit) prevMonthProfit.onclick = () => { currentProfitMonth.setMonth(currentProfitMonth.getMonth() - 1); renderProfitCalendar(); };
+            if (nextMonthProfit) nextMonthProfit.onclick = () => { currentProfitMonth.setMonth(currentProfitMonth.getMonth() + 1); renderProfitCalendar(); };
+            if (privacyToggle) privacyToggle.onclick = () => { privacyActive = !privacyActive; if (privacyActive) privacyToggle.classList.add('active'); else privacyToggle.classList.remove('active'); saveUserData(); applyPrivacy(); };
+            if (exportBtn) exportBtn.onclick = () => exportToJSON();
+            if (importBtn) importBtn.onclick = () => { if (importFileInput) importFileInput.click(); };
+            if (importFileInput) importFileInput.onchange = (e) => { if (e.target.files && e.target.files[0]) { importFromJSON(e.target.files[0]); } e.target.value = ''; };
+            if (resetBtn) resetBtn.onclick = () => resetUserData();
+            if (logoutBtn) logoutBtn.onclick = () => { logout(); };
+            if (floatingAddBtn) floatingAddBtn.onclick = () => alert("Utilisez les onglets pour ajouter profits, dépenses, investissements ou épargne.");
+            
+            // PWA Installation
+            let deferredPrompt = null;
+            const installBanner = document.getElementById('installBanner');
+            
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installBanner && !localStorage.getItem('installBannerClosed')) {
+                    installBanner.style.display = 'flex';
+                }
+            });
+            
+            if (installAppBtn) installAppBtn.onclick = () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+                }
+                if (installBanner) installBanner.style.display = 'none';
+            };
+            
+            if (closeInstallBanner) closeInstallBanner.onclick = () => {
+                if (installBanner) installBanner.style.display = 'none';
+                localStorage.setItem('installBannerClosed', 'true');
+            };
+            
+            if (installPwaBtn) installPwaBtn.onclick = () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+                } else {
+                    alert("Installez l'application via le menu de votre navigateur (Ajouter à l'écran d'accueil)");
+                }
+            };
         }
-    });
-    
-    document.getElementById('installAppBtn')?.addEventListener('click', () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+        
+        // Navigation
+        function buildBottomNav() {
+            const nav = document.getElementById('bottomNav');
+            if (!nav) return;
+            nav.innerHTML = `<button class="nav-item active" data-page="dashboard"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2h-5v-7H9v7H5a2 2 0 0 1-2-2z"/></svg><span>Dashboard</span></button><button class="nav-item" data-page="profits"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Profits</span></button><button class="nav-item" data-page="expenses"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><path d="M22 12h-4l-3 9-4-18-3 9H2"/></svg><span>Dépenses</span></button><button class="nav-item" data-page="investments"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><polyline points="18 8 22 12 18 16"/><polyline points="6 8 2 12 6 16"/><line x1="12" y1="2" x2="12" y2="22"/></svg><span>Invest</span></button><button class="nav-item" data-page="savings"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><rect x="2" y="7" width="20" height="14" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/></svg><span>Épargne</span></button><button class="nav-item" data-page="settings"><svg class="nav-icon" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Stats</span></button>`;
+            document.querySelectorAll('#bottomNav .nav-item').forEach(btn => btn.addEventListener('click', () => {
+                let page = btn.dataset.page;
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+                const pageEl = document.getElementById(`${page}Page`);
+                if (pageEl) pageEl.classList.add('active-page');
+                document.querySelectorAll('#bottomNav .nav-item').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (page === 'dashboard' || page === 'profits') updateAllUI();
+                if (page === 'profits') renderProfitCalendar();
+            }));
         }
-        installBanner.style.display = 'none';
-    });
-    
-    document.getElementById('closeInstallBanner')?.addEventListener('click', () => {
-        installBanner.style.display = 'none';
-        localStorage.setItem('installBannerClosed', 'true');
-    });
-    
-    document.getElementById('installPwaBtn')?.addEventListener('click', () => {
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-        } else {
-            alert("Installez l'application via le menu de votre navigateur (Ajouter à l'écran d'accueil)");
+        
+        // Auth event listeners
+        function initAuthListeners() {
+            const doLoginBtn = document.getElementById('doLoginBtn');
+            const doRegisterBtn = document.getElementById('doRegisterBtn');
+            const showRegister = document.getElementById('showRegister');
+            const showLogin = document.getElementById('showLogin');
+            
+            if (doLoginBtn) doLoginBtn.onclick = () => {
+                let email = document.getElementById('loginEmail').value.trim().toLowerCase();
+                let pwd = document.getElementById('loginPassword').value;
+                if (loginUser(email, pwd)) {
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('appContainer').style.display = 'block';
+                    updateAllUI();
+                } else {
+                    document.getElementById('loginError').innerText = 'Identifiants invalides';
+                }
+            };
+            
+            if (doRegisterBtn) doRegisterBtn.onclick = () => {
+                let email = document.getElementById('regEmail').value.trim().toLowerCase();
+                let pwd = document.getElementById('regPassword').value;
+                if (pwd.length < 4) {
+                    document.getElementById('regError').innerText = 'Mot de passe min 4 caractères';
+                    return;
+                }
+                if (registerUser(email, pwd)) {
+                    alert('Compte créé avec succès ! Connectez-vous.');
+                    document.getElementById('registerForm').style.display = 'none';
+                    document.getElementById('loginForm').style.display = 'block';
+                    document.getElementById('regError').innerText = '';
+                } else {
+                    document.getElementById('regError').innerText = 'Email déjà utilisé';
+                }
+            };
+            
+            if (showRegister) showRegister.onclick = () => {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('loginError').innerText = '';
+            };
+            
+            if (showLogin) showLogin.onclick = () => {
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('regError').innerText = '';
+            };
         }
-    });
-    
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('Service Worker note:', err));
-    }
-    
-    // ============ AUTH EVENT LISTENERS ============
-    document.getElementById('doLoginBtn').onclick = () => {
-        let email = document.getElementById('loginEmail').value.trim().toLowerCase();
-        let pwd = document.getElementById('loginPassword').value;
-        if (loginUser(email, pwd)) {
-            document.getElementById('authContainer').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
-            updateAllUI();
-        } else {
-            document.getElementById('loginError').innerText = 'Identifiants invalides';
+        
+        buildBottomNav();
+        initAuthListeners();
+        initEventListeners();
+        
+        // Service Worker auto-enregistré (inline)
+        if ('serviceWorker' in navigator) {
+            const swCode = `self.addEventListener('fetch', function(event) { event.respondWith(fetch(event.request).catch(() => caches.match(event.request))); });`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW note:', err));
         }
-    };
-    
-    document.getElementById('doRegisterBtn').onclick = () => {
-        let email = document.getElementById('regEmail').value.trim().toLowerCase();
-        let pwd = document.getElementById('regPassword').value;
-        if (pwd.length < 4) {
-            document.getElementById('regError').innerText = 'Mot de passe min 4 caractères';
-            return;
-        }
-        if (registerUser(email, pwd)) {
-            alert('Compte créé avec succès ! Connectez-vous.');
-            document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('regError').innerText = '';
-        } else {
-            document.getElementById('regError').innerText = 'Email déjà utilisé';
-        }
-    };
-    
-    document.getElementById('showRegister').onclick = () => {
-        document.getElementById('loginForm').style.display = 'none';
-        document.getElementById('registerForm').style.display = 'block';
-        document.getElementById('loginError').innerText = '';
-    };
-    
-    document.getElementById('showLogin').onclick = () => {
-        document.getElementById('registerForm').style.display = 'none';
-        document.getElementById('loginForm').style.display = 'block';
-        document.getElementById('regError').innerText = '';
-    };
+    })();
 </script>
 </body>
 </html>
